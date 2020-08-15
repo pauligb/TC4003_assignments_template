@@ -1,9 +1,34 @@
 package cos418_hw1_1
 
 import (
+	"bufio"
 	"fmt"
+	"log"
+	"os"
+	"regexp"
 	"sort"
+	"strings"
 )
+
+
+// Remove all special characters of a token using a regular expression and
+// converts all alphabetic characters to lower letters.
+//	r: regular expression used to remove special characters from token.
+// 	word: token to be normalized.
+func normalizeWord(r *regexp.Regexp, word string) string {
+	alphanumericWrd := r.ReplaceAllString(word, "")
+	return strings.ToLower(alphanumericWrd)
+}
+
+
+// Validate if a token qualifies as a word or not.
+// 	word: token to be evaluated.
+//	charThreshold: character threshold for whether a token qualifies as a word,
+//		e.g. charThreshold = 5 means "apple" is a word but "pear" is not.
+func validateWord(word string, charThreshold int) bool {
+	return len(word) >= charThreshold
+}
+
 
 // Find the top K most common words in a text document.
 // 	path: location of the document
@@ -15,13 +40,60 @@ import (
 // are removed, e.g. "don't" becomes "dont".
 // You should use `checkError` to handle potential errors.
 func topWords(path string, numWords int, charThreshold int) []WordCount {
-	// TODO: implement me
-	// HINT: You may find the `strings.Fields` and `strings.ToLower` functions helpful
-	// HINT: To keep only alphanumeric characters, use the regex "[^0-9a-zA-Z]+"
-	return nil
+
+	// Opening file and logging if there are any errors.
+    file, err := os.Open(path)
+    if err != nil {
+        log.Fatal(err)
+    }
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+    scanner.Split(bufio.ScanWords)
+
+    // Hashmap to count word appeareances.
+    var wordsCount map[string]int
+    wordsCount = make(map[string]int)
+
+	r, _ := regexp.Compile("[^0-9a-zA-Z]+")
+    
+    // Normalizing words and counting repetitions.
+    // Normalize: Remove special characters to words.
+    for scanner.Scan() {
+        word := scanner.Text()
+        normalizedWord := normalizeWord(r, word)
+        if validateWord(normalizedWord, charThreshold) {
+       		wordsCount[normalizedWord]++
+        }
+    }
+
+    // Converting all results into WordCount objects.
+    var wcList []WordCount
+    for word, count := range wordsCount {
+    	var wc WordCount
+    	wc.Word = word
+    	wc.Count = count
+    	wcList = append(wcList, wc)
+    }
+
+    sortWordCounts(wcList)
+
+    // Obtaining only the number of words that are requeted.
+    // If the requested number of words is bigger than the ones in the list
+    // then all list is returned.
+    var result []WordCount
+    for i := 0; i < numWords && i < len(wcList); i++ {
+    	result = append(result, wcList[i])
+    }
+
+    if err := scanner.Err(); err != nil {
+        log.Fatal(err)
+    }
+
+	return result
 }
 
-// A struct that represents how many times a word is observed in a document
+// A struct that represents how many times a word is observed in a document.
 type WordCount struct {
 	Word  string
 	Count int

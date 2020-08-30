@@ -3,7 +3,6 @@ package cos418_hw1_1
 import (
     "bufio"
     "fmt"
-    "log"
     "os"
     "regexp"
     "sort"
@@ -43,9 +42,7 @@ func topWords(path string, numWords int, charThreshold int) []WordCount {
 
     // Opening file and logging if there are any errors.
     file, err := os.Open(path)
-    if err != nil {
-        log.Fatal(err)
-    }
+    checkError(err)
     defer file.Close()
 
     scanner := bufio.NewScanner(file)
@@ -87,7 +84,7 @@ func topWords(path string, numWords int, charThreshold int) []WordCount {
     }
 
     if err := scanner.Err(); err != nil {
-        log.Fatal(err)
+        checkError(err)
     }
 
     return result
